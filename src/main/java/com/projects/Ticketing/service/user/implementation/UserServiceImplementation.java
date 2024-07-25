@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -28,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -37,6 +39,10 @@ public class UserServiceImplementation implements UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final JwtAuthService jwtAuthService;
+
+    @Value("${VALIDATION_EMAIL.regexp}")
+    private String emailRegex;
+
     Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class.getName());
 
     public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService, JwtAuthService jwtAuthService) {
@@ -52,8 +58,19 @@ public class UserServiceImplementation implements UserService {
         BaseResponse response = new BaseResponse();
         User user = new User();
         try {
-            Optional<User> inputtedEmail = userRepository.findByEmail(dto.getEmail());
+            // Email validation
+            Pattern pattern = Pattern.compile(emailRegex);
+            if (dto.getEmail() == null || !pattern.matcher(dto.getEmail()).matches()) {
+                return new BaseResponse(
+                        HttpServletResponse.SC_BAD_REQUEST,
+                        "Invalid email format",
+                        null,
+                        null
+                );
+            }
 
+            //email checker
+            Optional<User> inputtedEmail = userRepository.findByEmail(dto.getEmail());
             if (inputtedEmail.isPresent()) {
                 return new BaseResponse(
                         HttpServletResponse.SC_BAD_REQUEST,
@@ -63,15 +80,17 @@ public class UserServiceImplementation implements UserService {
                 );
             }
 
-            if (dto.getPhoneNumber().length() != 11) {
+            //phone number validation
+            if (dto.getPhoneNumber() == null || !dto.getPhoneNumber().matches("\\d{11}")) {
                 return new BaseResponse(
                         HttpServletResponse.SC_BAD_REQUEST,
-                        "phone number must be 11",
+                        "Phone number must be 11 digits long and contain only numbers",
                         null,
                         null
                 );
             }
 
+            //adding roles
             if (Objects.equals(dto.getRole(), Roles.ADMIN.name())) {
                 user.setRole(Roles.ADMIN);
             } else if (Objects.equals(dto.getRole(), Roles.USER.name())) {
@@ -85,6 +104,7 @@ public class UserServiceImplementation implements UserService {
                 );
             }
 
+            // saving the dto
             user.setFirstName(dto.getFirstName());
             user.setLastName(dto.getLastName());
             user.setEmail(dto.getEmail());

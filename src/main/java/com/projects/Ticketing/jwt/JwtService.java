@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -88,8 +87,8 @@ public class JwtService {
         return role.toString();
     }
 
-    public Date extractTokenCreation(String token){
-        return extractClaim(token, Claims::getIssuedAt);
+    public void extractTokenCreation(String token){
+        extractClaim(token, Claims::getIssuedAt);
     }
 
 //    public String generateToken(Authentication authentication){
