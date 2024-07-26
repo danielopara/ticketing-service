@@ -37,8 +37,7 @@ public class User implements UserDetails {
     public String phoneNumber;
 
     @Column(name = "role")
-    @Enumerated(EnumType.STRING)
-    public Roles role;
+    public String role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

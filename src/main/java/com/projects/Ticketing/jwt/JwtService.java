@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -56,7 +57,7 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    public String generateToken(Map<String, Object> getDetails, Authentication authentication) {
+    private String generateToken(Map<String, Object> getDetails, Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         Optional<User> userOptional = userRepository.findByEmail(userDetails.getUsername());
 
@@ -64,8 +65,8 @@ public class JwtService {
             throw new RuntimeException("User not found");
         }
 
-        Roles role = userOptional.get().getRole();
-        getDetails.put("role", role.toString());
+        String role = userOptional.get().getRole();
+        getDetails.put("role", role);
 
         return Jwts.builder()
                 .setClaims(getDetails)
@@ -91,9 +92,9 @@ public class JwtService {
         extractClaim(token, Claims::getIssuedAt);
     }
 
-//    public String generateToken(Authentication authentication){
-//        return generateToken(new HashMap<>(), authentication);
-//    }
+    public String generateToken(Authentication authentication){
+        return generateToken(new HashMap<>(), authentication);
+    }
 
     public String extractUsername(String token){
         return extractClaim(token, Claims::getSubject);

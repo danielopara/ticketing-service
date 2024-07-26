@@ -44,4 +44,34 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
     }
+
+    @GetMapping("/allUsers")
+    public ResponseEntity<?> getAllUsers(){
+        BaseResponse response = userService.getAllUsers();
+        if(response.getStatusCode() == HttpServletResponse.SC_OK){
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("id/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id){
+        BaseResponse response = userService.getUserById(id);
+        if(response.getStatusCode() == HttpServletResponse.SC_OK){
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("email/{email}")
+    public ResponseEntity<?> getUserByEmail(@PathVariable String email){
+        BaseResponse response = userService.getUserByEmail(email);
+        if(response.getStatusCode() == HttpServletResponse.SC_OK){
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+    }
 }

@@ -25,10 +25,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Service
@@ -58,6 +55,9 @@ public class UserServiceImplementation implements UserService {
         BaseResponse response = new BaseResponse();
         User user = new User();
         try {
+            // Log incoming role value
+            logger.info("Incoming role value: {}", dto.getRole());
+
             // Email validation
             Pattern pattern = Pattern.compile(emailRegex);
             if (dto.getEmail() == null || !pattern.matcher(dto.getEmail()).matches()) {
@@ -69,18 +69,18 @@ public class UserServiceImplementation implements UserService {
                 );
             }
 
-            //email checker
+            // Email checker
             Optional<User> inputtedEmail = userRepository.findByEmail(dto.getEmail());
             if (inputtedEmail.isPresent()) {
                 return new BaseResponse(
                         HttpServletResponse.SC_BAD_REQUEST,
-                        "user email already exist",
+                        "User email already exists",
                         null,
                         null
                 );
             }
 
-            //phone number validation
+            // Phone number validation
             if (dto.getPhoneNumber() == null || !dto.getPhoneNumber().matches("\\d{11}")) {
                 return new BaseResponse(
                         HttpServletResponse.SC_BAD_REQUEST,
@@ -90,47 +90,44 @@ public class UserServiceImplementation implements UserService {
                 );
             }
 
-            //adding roles
-            if (Objects.equals(dto.getRole(), Roles.ADMIN.name())) {
-                user.setRole(Roles.ADMIN);
-            } else if (Objects.equals(dto.getRole(), Roles.USER.name())) {
-                user.setRole(Roles.USER);
-            } else {
+            // Role validation
+            if (!dto.getRole().equals("ADMIN") && !dto.getRole().equals("USER")) {
                 return new BaseResponse(
                         HttpServletResponse.SC_BAD_REQUEST,
-                        "User role can only be ADMIN or USER",
+                        "roles can either be ADMIN or USER",
                         null,
                         null
                 );
             }
 
-            // saving the dto
+            // Save user details
             user.setFirstName(dto.getFirstName());
             user.setLastName(dto.getLastName());
             user.setEmail(dto.getEmail());
+            user.setRole(dto.getRole());
             user.setPhoneNumber(dto.getPhoneNumber());
             user.setPassword(passwordEncoder.encode(dto.getPassword()));
 
             Map<String, Object> userDetail = new HashMap<>();
-
             userDetail.put("firstName", dto.getFirstName());
             userDetail.put("lastName", dto.getLastName());
             userDetail.put("email", dto.getEmail());
             userDetail.put("phoneNumber", dto.getPhoneNumber());
 
-
             userRepository.save(user);
 
             response.setData(userDetail);
             response.setStatusCode(HttpServletResponse.SC_OK);
-            response.setDescription("user created");
+            response.setDescription("User created successfully");
             response.setError(null);
 
             return response;
         } catch (Exception e) {
-            return new BaseResponse(HttpStatus.BAD_REQUEST.value(), "Authentication Failed", null, e.getMessage());
+            logger.error("Unexpected error occurred", e);
+            return new BaseResponse(HttpStatus.BAD_REQUEST.value(), "creation failed", null, e.getMessage());
         }
     }
+
 
     @Override
     public BaseResponse login(UserLoginDto dto) {
@@ -152,7 +149,7 @@ public class UserServiceImplementation implements UserService {
 
             // Generate JWT token
             Map<String, Object> claims = new HashMap<>();
-            String token = jwtService.generateToken(claims, authentication);
+            String token = jwtService.generateToken(authentication);
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("token", token);
@@ -190,6 +187,109 @@ public class UserServiceImplementation implements UserService {
                     "Internal server error",
                     null,
                     e.getMessage()
+            );
+        }
+    }
+
+    @Override
+    public BaseResponse getAllUsers() {
+        try{
+            List<User> allUsers = userRepository.findAll();
+
+            List<Map<String, Object>> userDetailsList = new ArrayList<>();
+            for(User user: allUsers){
+                Map<String, Object> userDetails = new HashMap<>();
+
+                userDetails.put("firstName", user.getFirstName());
+                userDetails.put("lastName", user.getLastName());
+                userDetails.put("email", user.getEmail());
+                userDetails.put("phoneNumber", user.getPhoneNumber());
+
+                userDetailsList.add(userDetails);
+            }
+            return new BaseResponse(
+                    HttpServletResponse.SC_OK,
+                    "list of users",
+                    userDetailsList,
+                    null
+            );
+        }catch (Exception e){
+            return new BaseResponse(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "error retriving users",
+                    null,
+                    null
+            );
+        }
+    }
+
+    @Override
+    public BaseResponse getUserById(Long id) {
+
+        try{
+            Optional<User> userId = userRepository.findById(id);
+            if(userId.isEmpty()){
+                return new BaseResponse(
+                        HttpServletResponse.SC_BAD_REQUEST,
+                        "user not found",
+                        null,
+                        null
+                );
+            }
+            User user = userId.get();
+            Map<String, Object> userDetails = new HashMap<>();
+            userDetails.put("firstName", user.getFirstName());
+            userDetails.put("lastName", user.getLastName());
+            userDetails.put("phoneNumber", user.getPhoneNumber());
+            userDetails.put("email", user.getEmail());
+
+            return new BaseResponse(
+                    HttpServletResponse.SC_OK,
+                    "user details",
+                    userDetails,
+                    null
+            );
+        } catch (Exception e){
+            return new BaseResponse(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "failed to get user",
+                    null,
+                    null
+            );
+        }
+    }
+
+    @Override
+    public BaseResponse getUserByEmail(String email) {
+        try{
+            Optional<User> userId = userRepository.findByEmail(email);
+            if(userId.isEmpty()){
+                return new BaseResponse(
+                        HttpServletResponse.SC_BAD_REQUEST,
+                        "user not found",
+                        null,
+                        null
+                );
+            }
+            User user = userId.get();
+            Map<String, Object> userDetails = new HashMap<>();
+            userDetails.put("firstName", user.getFirstName());
+            userDetails.put("lastName", user.getLastName());
+            userDetails.put("phoneNumber", user.getPhoneNumber());
+            userDetails.put("email", user.getEmail());
+
+            return new BaseResponse(
+                    HttpServletResponse.SC_OK,
+                    "user details",
+                    userDetails,
+                    null
+            );
+        } catch (Exception e){
+            return new BaseResponse(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "failed to get user",
+                    null,
+                    null
             );
         }
     }
