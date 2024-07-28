@@ -1,6 +1,7 @@
 package com.projects.Ticketing.controller;
 
 import com.projects.Ticketing.dtos.CreateUserDto;
+import com.projects.Ticketing.dtos.UpdateDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.service.user.implementation.UserServiceImplementation;
@@ -46,6 +47,7 @@ public class UserController {
     }
 
     @GetMapping("/allUsers")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllUsers(){
         BaseResponse response = userService.getAllUsers();
         if(response.getStatusCode() == HttpServletResponse.SC_OK){
@@ -71,6 +73,26 @@ public class UserController {
         if(response.getStatusCode() == HttpServletResponse.SC_OK){
             return new ResponseEntity<>(response, HttpStatus.OK);
         } else {
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PutMapping("update/{id}")
+    public ResponseEntity<?> updateUserDetails(@PathVariable Long id, @RequestBody UpdateDto dto){
+        BaseResponse response = userService.updateUser(id, dto);
+        if(response.getStatusCode() == HttpServletResponse.SC_OK){
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }else {
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @DeleteMapping("delete-user/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id){
+        BaseResponse response = userService.deleteUser(id);
+        if(response.getStatusCode() == HttpServletResponse.SC_OK){
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }else{
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
     }

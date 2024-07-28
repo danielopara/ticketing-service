@@ -1,11 +1,9 @@
 package com.projects.Ticketing.service.user.implementation;
 
-import com.projects.Ticketing.controller.UserController;
 import com.projects.Ticketing.dtos.CreateUserDto;
+import com.projects.Ticketing.dtos.UpdateDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
-import com.projects.Ticketing.jwt.JwtAuthService;
 import com.projects.Ticketing.jwt.JwtService;
-import com.projects.Ticketing.model.Roles;
 import com.projects.Ticketing.model.User;
 import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
@@ -35,19 +33,17 @@ public class UserServiceImplementation implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final JwtAuthService jwtAuthService;
 
     @Value("${VALIDATION_EMAIL.regexp}")
     private String emailRegex;
 
     Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class.getName());
 
-    public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService, JwtAuthService jwtAuthService) {
+    public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
-        this.jwtAuthService = jwtAuthService;
     }
 
     @Override
@@ -128,10 +124,88 @@ public class UserServiceImplementation implements UserService {
         }
     }
 
+    @Override
+    public BaseResponse updateUser(Long id, UpdateDto dto) {
+        if (id == null || dto == null) {
+            return new BaseResponse(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Invalid input data.",
+                    null,
+                    null);
+        }
+
+        // Retrieve and update the user in one go
+        User existingUser = userRepository.findById(id).orElse(null);
+
+        if (existingUser == null) {
+            return new BaseResponse(
+                    HttpStatus.NOT_FOUND.value(),
+                    "User not found.",
+                    null,
+                    null);
+        }
+
+        // Update user details
+        existingUser.setFirstName(dto.getFirstName());
+        existingUser.setLastName(dto.getLastName());
+        existingUser.setEmail(dto.getEmail());
+        existingUser.setPhoneNumber(dto.getPhoneNumber());
+        existingUser.setEmail(dto.getEmail());
+        // Update other fields from dto as necessary
+
+        // Save the updated user
+        userRepository.save(existingUser);
+
+        return new BaseResponse(
+                HttpStatus.OK.value(),
+                "User updated successfully.",
+                null,
+                null);
+    }
+
+    @Override
+    public BaseResponse deleteUser(Long id) {
+        try{
+            Optional<User> userId = userRepository.findById(id);
+            if(userId.isEmpty()){
+                return new BaseResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "user not found",
+                        null,
+                        null
+                );
+            }
+
+            userRepository.deleteById(id);
+            return new BaseResponse(
+                    HttpServletResponse.SC_OK,
+                    "user deleted",
+                    null,
+                    null
+            );
+        } catch (Exception e){
+            return new BaseResponse(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "failed to delete a user",
+                    null,
+                    null
+            );
+        }
+    }
+
 
     @Override
     public BaseResponse login(UserLoginDto dto) {
         try {
+
+            if (dto == null) {
+                return new BaseResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Invalid input data.",
+                        null,
+                        null);
+            }
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             dto.getUsername(),
@@ -148,7 +222,6 @@ public class UserServiceImplementation implements UserService {
             }
 
             // Generate JWT token
-            Map<String, Object> claims = new HashMap<>();
             String token = jwtService.generateToken(authentication);
 
             Map<String, Object> responseData = new HashMap<>();
@@ -227,6 +300,15 @@ public class UserServiceImplementation implements UserService {
     public BaseResponse getUserById(Long id) {
 
         try{
+
+            if (id == null) {
+                return new BaseResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Invalid input data.",
+                        null,
+                        null);
+            }
+
             Optional<User> userId = userRepository.findById(id);
             if(userId.isEmpty()){
                 return new BaseResponse(
@@ -262,6 +344,14 @@ public class UserServiceImplementation implements UserService {
     @Override
     public BaseResponse getUserByEmail(String email) {
         try{
+            if (email == null) {
+                return new BaseResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Invalid input data.",
+                        null,
+                        null);
+            }
+
             Optional<User> userId = userRepository.findByEmail(email);
             if(userId.isEmpty()){
                 return new BaseResponse(
