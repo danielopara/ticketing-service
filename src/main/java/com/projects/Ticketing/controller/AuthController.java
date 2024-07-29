@@ -1,18 +1,23 @@
 package com.projects.Ticketing.controller;
 
 import com.projects.Ticketing.dtos.RefreshTokenDTO;
+import com.projects.Ticketing.dtos.UserLoginDto;
 import com.projects.Ticketing.jwt.JwtService;
 import com.projects.Ticketing.jwt.RefreshTokenService;
 import com.projects.Ticketing.model.RefreshToken;
 import com.projects.Ticketing.model.User;
 import com.projects.Ticketing.repository.RefreshTokenRepository;
 import com.projects.Ticketing.repository.UserRepository;
+import com.projects.Ticketing.response.BaseResponse;
+import com.projects.Ticketing.service.user.implementation.UserServiceImplementation;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,16 +31,20 @@ import java.util.Optional;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
+    Logger logger = LoggerFactory.getLogger(UserController.class.getName());
+
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository repo;
+    private final UserServiceImplementation userService;
 
-    public AuthController(JwtService jwtService, UserRepository userRepository, RefreshTokenService refreshTokenService, RefreshTokenRepository repo) {
+    public AuthController(JwtService jwtService, UserRepository userRepository, RefreshTokenService refreshTokenService, RefreshTokenRepository repo, UserServiceImplementation userService) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.refreshTokenService = refreshTokenService;
         this.repo = repo;
+        this.userService = userService;
     }
 
 //    @PostMapping("/findToken")
@@ -111,6 +120,17 @@ public class AuthController {
         tokens.put("refreshToken", newRefreshTokenValue);
 
         return ResponseEntity.ok(tokens);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody UserLoginDto dto){
+        BaseResponse response = userService.login(dto);
+        logger.info(String.valueOf(dto));
+        if(response.getStatusCode() == HttpServletResponse.SC_OK){
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
     }
 
 
