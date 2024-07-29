@@ -4,6 +4,8 @@ import com.projects.Ticketing.dtos.CreateUserDto;
 import com.projects.Ticketing.dtos.UpdateDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
 import com.projects.Ticketing.jwt.JwtService;
+import com.projects.Ticketing.jwt.RefreshTokenService;
+import com.projects.Ticketing.model.RefreshToken;
 import com.projects.Ticketing.model.User;
 import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
@@ -33,17 +35,19 @@ public class UserServiceImplementation implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshToken;
 
     @Value("${VALIDATION_EMAIL.regexp}")
     private String emailRegex;
 
     Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class.getName());
 
-    public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService) {
+    public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService, RefreshTokenService refreshToken) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.refreshToken = refreshToken;
     }
 
     @Override
@@ -222,11 +226,16 @@ public class UserServiceImplementation implements UserService {
             }
 
             // Generate JWT token
-            String token = jwtService.generateToken(authentication);
+            String accessToken = jwtService.generateToken(authentication);
+            RefreshToken token = refreshToken.createRefreshToken(authentication.getName());
+
+            String mainToken = token.getToken();
+
 
             Map<String, Object> responseData = new HashMap<>();
-            responseData.put("token", token);
-            jwtService.extractTokenCreation(token);
+            responseData.put("token", accessToken);
+            responseData.put("refreshToken", mainToken);
+//            jwtService.extractTokenCreation(token);
 
             return new BaseResponse(
                     HttpServletResponse.SC_OK,
