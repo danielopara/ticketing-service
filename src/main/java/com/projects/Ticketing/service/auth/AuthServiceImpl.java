@@ -64,10 +64,12 @@ public class AuthServiceImpl implements AuthService {
             }
 
             // Generate JWT token
-            String token = jwtService.generateToken(authentication);
+            String token = jwtService.generateAccessToken(authentication);
+            String refreshToken = jwtService.generateRefreshToken(authentication);
 
             Map<String, Object> responseData = new HashMap<>();
-            responseData.put("token", token);
+            responseData.put("accessToken", token);
+            responseData.put("refreshToken", refreshToken);
             jwtService.extractTokenCreation(token);
 
             return new BaseResponse(

@@ -22,9 +22,13 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-//    private static final String SECRET_KEY = System.getenv("SECRET_KEY");
+
     @Value("${SECRET_KEY}")
     private String secretKey;
+
+    @Value("${REFRESH_TOKEN_EXPIRATION_MS}")
+    private long refreshTokenMs;
+
     private final UserRepository userRepository;
 
     public JwtService(UserRepository userRepository) {
@@ -57,22 +61,32 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    private String generateToken(Map<String, Object> getDetails, Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        Optional<User> userOptional = userRepository.findByEmail(userDetails.getUsername());
+//    private String generateToken(Map<String, Object> getDetails, Authentication authentication) {
+//        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+//        Optional<User> userOptional = userRepository.findByEmail(userDetails.getUsername());
+//
+//        if (userOptional.isEmpty()) {
+//            throw new RuntimeException("User not found");
+//        }
+//
+//        String role = userOptional.get().getRole();
+//        getDetails.put("role", role);
+//
+//        return Jwts.builder()
+//                .setClaims(getDetails)
+//                .setSubject(userDetails.getUsername())
+//                .setIssuedAt(new Date())
+//                .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
+//                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+//                .compact();
+//    }
 
-        if (userOptional.isEmpty()) {
-            throw new RuntimeException("User not found");
-        }
-
-        String role = userOptional.get().getRole();
-        getDetails.put("role", role);
-
+    private String generateToken(Map<String, Object> getDetails, String username, long expirationMs) {
         return Jwts.builder()
                 .setClaims(getDetails)
-                .setSubject(userDetails.getUsername())
+                .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -92,9 +106,9 @@ public class JwtService {
         extractClaim(token, Claims::getIssuedAt);
     }
 
-    public String generateToken(Authentication authentication){
-        return generateToken(new HashMap<>(), authentication);
-    }
+//    public String generateToken(Authentication authentication){
+//        return generateToken(new HashMap<>(), authentication);
+//    }
 
     public String extractUsername(String token){
         return extractClaim(token, Claims::getSubject);
@@ -103,5 +117,29 @@ public class JwtService {
     public boolean isTokenValid(String token, UserDetails userDetails){
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+    }
+
+    public String generateAccessToken(Authentication authentication) {
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        Optional<User> userOptional = userRepository.findByEmail(userDetails.getUsername());
+
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        String role = userOptional.get().getRole();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+
+        // Generate access token (valid for 1 day)
+        return generateToken(claims, userDetails.getUsername(), 24 * 60 * 60 * 1000);
+    }
+
+    public String generateRefreshToken(Authentication authentication) {
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        Map<String, Object> claims = new HashMap<>();
+
+        // Generate refresh token with longer expiration time
+        return generateToken(claims, userDetails.getUsername(), refreshTokenMs);
     }
 }
