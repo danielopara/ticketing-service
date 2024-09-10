@@ -35,16 +35,16 @@ public class UserController {
         }
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody UserLoginDto dto){
-        BaseResponse response = userService.login(dto);
-        logger.info(String.valueOf(dto));
-        if(response.getStatusCode() == HttpServletResponse.SC_OK){
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-    }
+//    @PostMapping("/login")
+//    public ResponseEntity<?> loginUser(@RequestBody UserLoginDto dto){
+//        BaseResponse response = userService.login(dto);
+//        logger.info(String.valueOf(dto));
+//        if(response.getStatusCode() == HttpServletResponse.SC_OK){
+//            return new ResponseEntity<>(response, HttpStatus.OK);
+//        } else {
+//            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+//        }
+//    }
 
     @GetMapping("/allUsers")
 //    @PreAuthorize("hasRole('ADMIN')")
