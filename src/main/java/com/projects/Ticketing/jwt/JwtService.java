@@ -135,6 +135,23 @@ public class JwtService {
         return generateToken(claims, userDetails.getUsername(), 24 * 60 * 60 * 1000);
     }
 
+    public String generateAccessTokenWithRefreshToken(String refreshToken){
+        String username = extractUsername(refreshToken);
+
+        Optional<User> userOptional = userRepository.findByEmail(username);
+
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        String role = userOptional.get().getRole();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+
+
+        return generateToken(claims, username, 24 * 60 * 60 * 1000);
+    }
+
     public String generateRefreshToken(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         Map<String, Object> claims = new HashMap<>();

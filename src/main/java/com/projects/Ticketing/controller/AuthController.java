@@ -1,5 +1,6 @@
 package com.projects.Ticketing.controller;
 
+import com.projects.Ticketing.dtos.RefreshTokenDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.service.auth.AuthServiceImpl;
@@ -36,6 +37,16 @@ public class AuthController {
        }else{
            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
        }
+    }
+
+    @PostMapping("/refresh-token")
+    ResponseEntity<?> refreshToken(@RequestBody RefreshTokenDto refreshTokenDto){
+        BaseResponse response = authService.refreshToken(refreshTokenDto);
+        if(response.getStatusCode() == HttpStatus.OK.value()){
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
     }
 
 }
