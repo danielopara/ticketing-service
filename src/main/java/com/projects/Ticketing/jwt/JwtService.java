@@ -1,6 +1,5 @@
 package com.projects.Ticketing.jwt;
 
-import com.projects.Ticketing.model.Roles;
 import com.projects.Ticketing.model.User;
 import com.projects.Ticketing.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -135,8 +134,7 @@ public class JwtService {
         return generateToken(claims, userDetails.getUsername(), 24 * 60 * 60 * 1000);
     }
 
-    public String generateAccessTokenWithRefreshToken(String refreshToken){
-        String username = extractUsername(refreshToken);
+    public String generateAccessTokenUsername(String username){
 
         Optional<User> userOptional = userRepository.findByEmail(username);
 

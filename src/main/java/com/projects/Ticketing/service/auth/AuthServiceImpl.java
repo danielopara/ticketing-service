@@ -3,7 +3,9 @@ package com.projects.Ticketing.service.auth;
 import com.projects.Ticketing.dtos.RefreshTokenDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
 import com.projects.Ticketing.jwt.JwtService;
+import com.projects.Ticketing.model.RefreshToken;
 import com.projects.Ticketing.model.User;
+import com.projects.Ticketing.repository.RefreshTokenRepository;
 import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.service.user.implementation.UserServiceImplementation;
@@ -11,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,28 +25,56 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
-    private final UserRepository userRepository;
 
+    @Value("${REFRESH_TOKEN_EXPIRATION_MS}")
+    private long refreshTokenMs;
+
+    private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepo;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
     //logger
     Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class.getName());
 
+
+    public boolean isRefreshTokenExpired(RefreshToken refreshToken) {
+        Date now = new Date();
+        return refreshToken.getExpireDate().before(now);
+    }
+
+
     public AuthServiceImpl(JwtService jwtService, AuthenticationManager authenticationManager,
-                           UserRepository userRepository) {
+                           UserRepository userRepository, RefreshTokenRepository refreshTokenRepo) {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
+        this.refreshTokenRepo = refreshTokenRepo;
     }
 
+    @Override
+    public RefreshToken createRefreshToken(Long id) {
+        RefreshToken refreshToken = new RefreshToken();
+
+        Optional<User> userId = userRepository.findById(id);
+
+        if(userId.isEmpty()){
+            throw new RuntimeException("user id does not exist");
+        }
+
+        refreshToken.setUser(userId.get());
+        refreshToken.setExpireDate((new Date(System.currentTimeMillis() + refreshTokenMs)));
+        refreshToken.setToken(UUID.randomUUID().toString());
+
+        refreshTokenRepo.save(refreshToken);
+
+        return refreshToken;
+    }
 
     @Override
     public BaseResponse loginService(UserLoginDto dto) {
@@ -74,11 +105,16 @@ public class AuthServiceImpl implements AuthService {
 
             // Generate JWT token
             String token = jwtService.generateAccessToken(authentication);
-            String refreshToken = jwtService.generateRefreshToken(authentication);
+
+            // generate refresh token
+            User user = userRepository.findByEmail(dto.getUsername()).
+                    orElseThrow(()-> new RuntimeException("ERROR with logging in"));
+
+            RefreshToken refreshToken = createRefreshToken(user.getId());
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("accessToken", token);
-            responseData.put("refreshToken", refreshToken);
+            responseData.put("refreshToken", refreshToken.getToken());
             jwtService.extractTokenCreation(token);
 
             return new BaseResponse(
@@ -120,35 +156,28 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public BaseResponse refreshToken(RefreshTokenDto refreshTokenDto) {
         try{
-            String refreshToken = refreshTokenDto.getRefreshToken();
-            String username = jwtService.extractUsername(refreshToken);
+            RefreshToken token = refreshTokenRepo.findByToken(refreshTokenDto.getRefreshToken())
+                    .orElseThrow(()-> new RuntimeException("token does not exist"));
 
-            Optional<User> userEmail = userRepository.findByEmail(username);
+            boolean refreshTokenExpired = isRefreshTokenExpired(token);
 
-            if(userEmail.isEmpty()){
+            if(refreshTokenExpired){
                 return new BaseResponse(
-                        HttpServletResponse.SC_NOT_FOUND,
-                        "email not found",
-                        null,
-                        null
-                );
-            }
-            boolean tokenValid = jwtService.isTokenValid(refreshToken, userEmail.get());
-
-            if(!tokenValid){
-                return new BaseResponse(
-                        HttpServletResponse.SC_FORBIDDEN,
-                        "token is invalid",
+                        HttpStatus.FORBIDDEN.value(),
+                        "refresh token expired",
                         null,
                         null
                 );
             }
 
-            String token = jwtService.generateAccessTokenWithRefreshToken(refreshToken);
+            String username = token.getUser().getEmail();
+
+            String accessToken = jwtService.generateAccessTokenUsername(username);
+
             return new BaseResponse(
-                    HttpServletResponse.SC_OK,
+                    HttpStatus.OK.value(),
                     "access token generated",
-                    token,
+                    accessToken,
                     null
             );
 
@@ -163,5 +192,6 @@ public class AuthServiceImpl implements AuthService {
             );
         }
     }
+
 
 }
