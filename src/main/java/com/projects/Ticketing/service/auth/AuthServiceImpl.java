@@ -8,6 +8,7 @@ import com.projects.Ticketing.model.User;
 import com.projects.Ticketing.repository.RefreshTokenRepository;
 import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
+import com.projects.Ticketing.response.TokenResponse;
 import com.projects.Ticketing.service.user.implementation.UserServiceImplementation;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -77,15 +76,17 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public BaseResponse loginService(UserLoginDto dto) {
+    public TokenResponse loginService(UserLoginDto dto) {
         try {
 
             if (dto == null) {
-                return new BaseResponse(
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Invalid input data.",
+                return new TokenResponse(
+                        HttpStatus.NO_CONTENT.value(),
+                        "no content",
                         null,
-                        null);
+                        null,
+                        null
+                );
             }
 
             Authentication authentication = authenticationManager.authenticate(
@@ -95,9 +96,10 @@ public class AuthServiceImpl implements AuthService {
 
             // Check if the authentication was successful
             if (authentication == null || !authentication.isAuthenticated()) {
-                return new BaseResponse(
+                return new TokenResponse(
                         HttpServletResponse.SC_BAD_REQUEST,
                         "User email or password is incorrect",
+                        null,
                         null,
                         null
                 );
@@ -112,41 +114,45 @@ public class AuthServiceImpl implements AuthService {
 
             RefreshToken refreshToken = createRefreshToken(user.getId());
 
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("accessToken", token);
-            responseData.put("refreshToken", refreshToken.getToken());
-            jwtService.extractTokenCreation(token);
+//            Map<String, Object> responseData = new HashMap<>();
+//            responseData.put("accessToken", token);
+//            responseData.put("refreshToken", refreshToken.getToken());
+//            jwtService.extractTokenCreation(token);
 
-            return new BaseResponse(
+            return new TokenResponse(
                     HttpServletResponse.SC_OK,
                     "Login successful",
-                    responseData,
+                    token,
+                    refreshToken.getToken(),
                     null
             );
 
         } catch (UsernameNotFoundException | BadCredentialsException e) {
             // Specific handling for failed authentication
-            return new BaseResponse(
+            return new TokenResponse(
                     HttpServletResponse.SC_BAD_REQUEST,
                     "User email or password is incorrect",
+                    null,
                     null,
                     e.getMessage()
             );
         } catch (AuthenticationException e) {
             // General handling for any other authentication exceptions
             logger.warn(String.valueOf(e));
-            return new BaseResponse(
+            return new TokenResponse(
                     HttpStatus.BAD_REQUEST.value(),
                     "Authentication failed",
+                    null,
                     null,
                     e.getMessage()
             );
         } catch (Exception e) {
             // Handling for unexpected exceptions
             logger.error("Unexpected error occurred", e);
-            return new BaseResponse(
+            return new TokenResponse(
                     HttpStatus.INTERNAL_SERVER_ERROR.value(),
                     "Internal server error",
+                    null,
                     null,
                     e.getMessage()
             );
