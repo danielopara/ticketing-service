@@ -1,5 +1,6 @@
 package com.projects.Ticketing.controller;
 
+import com.projects.Ticketing.dtos.ChangePasswordDto;
 import com.projects.Ticketing.dtos.CreateUserDto;
 import com.projects.Ticketing.dtos.UpdateDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
@@ -41,16 +42,19 @@ public class UserController {
         }
     }
 
-//    @PostMapping("/login")
-//    public ResponseEntity<?> loginUser(@RequestBody UserLoginDto dto){
-//        BaseResponse response = userService.login(dto);
-//        logger.info(String.valueOf(dto));
-//        if(response.getStatusCode() == HttpServletResponse.SC_OK){
-//            return new ResponseEntity<>(response, HttpStatus.OK);
-//        } else {
-//            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-//        }
-//    }
+    @PutMapping("/update-password")
+    public ResponseEntity<?> updatePassword(@RequestBody ChangePasswordDto passwordDto){
+        BaseResponse response = userService.updatePassword(passwordDto);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        if(response.getStatusCode() == HttpServletResponse.SC_OK){
+            return new ResponseEntity<>(response, headers, HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>(response, headers, HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @GetMapping("/allUsers")
 //    @PreAuthorize("hasRole('ADMIN')")

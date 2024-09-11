@@ -1,5 +1,6 @@
 package com.projects.Ticketing.service.user.implementation;
 
+import com.projects.Ticketing.dtos.ChangePasswordDto;
 import com.projects.Ticketing.dtos.CreateUserDto;
 import com.projects.Ticketing.dtos.UpdateDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
@@ -187,6 +188,50 @@ public class UserServiceImplementation implements UserService {
             return new BaseResponse(
                     HttpServletResponse.SC_BAD_REQUEST,
                     "failed to delete a user",
+                    null,
+                    null
+            );
+        }
+    }
+
+    @Override
+    public BaseResponse updatePassword(ChangePasswordDto changePasswordDto) {
+        try{
+            Optional<User> checkUserEmail = userRepository.findByEmail(changePasswordDto.getEmail());
+
+            if(checkUserEmail.isEmpty()){
+                return new BaseResponse(
+                        HttpStatus.NOT_FOUND.value(),
+                        "user not found",
+                        null,
+                        null
+                );
+            }
+
+            User user = checkUserEmail.get();
+            if(!passwordEncoder.matches(changePasswordDto.getOldPassword(), user.getPassword())){
+                return new BaseResponse(
+                        HttpStatus.NO_CONTENT.value(),
+                        "incorrect old password",
+                        null,
+                        null
+                );
+            }
+
+            String encryptedPassword = passwordEncoder.encode(changePasswordDto.getNewPassword());
+            user.setPassword(encryptedPassword);
+            userRepository.save(user);
+
+            return new BaseResponse(
+                    HttpStatus.OK.value(),
+                    "password changed successfully",
+                    null,
+                    null
+            );
+        } catch (Exception e){
+            return new BaseResponse(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "error changing password",
                     null,
                     null
             );
