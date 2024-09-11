@@ -20,10 +20,16 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                          AuthenticationException authException) throws IOException, ServletException {
         response.setStatus(HttpStatus.FORBIDDEN.value());
         response.setContentType("application/json");
+        String requestURI = request.getRequestURI();
+
 
         Map<String, String > responseBody = new HashMap<>();
+        responseBody.put("status", String.valueOf(HttpStatus.FORBIDDEN.value()));
         responseBody.put("error", "Unauthorized");
-        responseBody.put("message", "Bearer token is missing");
+        responseBody.put("message", authException.getMessage());
+        responseBody.put("url", requestURI);
+        responseBody.put("path", request.getServletPath());
+
 
         String jsonResponse = new ObjectMapper().writeValueAsString(responseBody);
 
