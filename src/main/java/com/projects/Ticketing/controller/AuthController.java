@@ -7,9 +7,7 @@ import com.projects.Ticketing.service.auth.AuthServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,20 +30,28 @@ public class AuthController {
     @PostMapping("/login")
     ResponseEntity<?> login(@RequestBody UserLoginDto userLoginDto){
        BaseResponse response = authService.loginService(userLoginDto);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
        if(response.getStatusCode() == HttpStatus.OK.value()){
-           return new ResponseEntity<>(response, HttpStatus.OK);
+           return new ResponseEntity<>(response, headers, HttpStatus.OK);
        }else{
-           return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+           return new ResponseEntity<>(response, headers, HttpStatus.BAD_REQUEST);
        }
     }
 
     @PostMapping("/refresh-token")
     ResponseEntity<?> refreshToken(@RequestBody RefreshTokenDto refreshTokenDto){
         BaseResponse response = authService.refreshToken(refreshTokenDto);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
         if(response.getStatusCode() == HttpStatus.OK.value()){
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return new ResponseEntity<>(response, headers, HttpStatus.OK);
         }else{
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, headers, HttpStatus.BAD_REQUEST);
         }
     }
 
