@@ -2,7 +2,6 @@ package com.projects.Ticketing.utils;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 public class CookiesUtils {
     public static String getCookieValue(String cookieName, HttpServletRequest request){
