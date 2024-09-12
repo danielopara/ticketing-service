@@ -31,6 +31,7 @@ public class User implements UserDetails {
 
     public String password;
 
+    @Column(unique = true)
     public String email;
 
     @Column(name = "phone_number")
