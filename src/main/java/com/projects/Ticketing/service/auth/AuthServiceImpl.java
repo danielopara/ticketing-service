@@ -199,5 +199,44 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    public BaseResponse refreshTokenCookie(String refreshToken) {
+        try{
+            RefreshToken token = refreshTokenRepo.findByToken(refreshToken)
+                    .orElseThrow(()-> new RuntimeException("token does not exist"));
+
+            boolean refreshTokenExpired = isRefreshTokenExpired(token);
+
+            if(refreshTokenExpired){
+                return new BaseResponse(
+                        HttpStatus.FORBIDDEN.value(),
+                        "refresh token expired",
+                        null,
+                        null
+                );
+            }
+
+            String username = token.getUser().getEmail();
+
+            String accessToken = jwtService.generateAccessTokenUsername(username);
+
+            return new BaseResponse(
+                    HttpStatus.OK.value(),
+                    "access token generated",
+                    accessToken,
+                    null
+            );
+
+
+        } catch (Exception e){
+            logger.error("Unexpected error occurred", e);
+            return new BaseResponse(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Internal server error",
+                    null,
+                    e.getMessage()
+            );
+        }
+    }
+
 
 }

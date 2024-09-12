@@ -9,10 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -77,6 +74,17 @@ public class AuthController {
         }else{
             return new ResponseEntity<>(response, headers, HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @PostMapping("/cookie/refresh-token")
+    ResponseEntity<?> cookieToken(@CookieValue(name = "refreshToken") String refreshToken){
+        BaseResponse response = authService.refreshTokenCookie(refreshToken);
+        if(response.getStatusCode() == HttpStatus.OK.value()){
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
     }
 
 }
