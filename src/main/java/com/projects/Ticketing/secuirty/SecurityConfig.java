@@ -42,7 +42,7 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthService, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout
-                        .logoutUrl("api/v1/auth")
+                        .logoutUrl("api/v1/auth/logout")
                         .logoutSuccessHandler(((request, response, authentication) -> {
                             response.setStatus(200);
                             response.getWriter().write("{\"message\": \"logout successful\"}");

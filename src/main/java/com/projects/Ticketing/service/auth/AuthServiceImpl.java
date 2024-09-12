@@ -13,6 +13,8 @@ import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.response.TokenResponse;
 import com.projects.Ticketing.service.user.implementation.UserServiceImplementation;
 import com.projects.Ticketing.utils.CookiesUtils;
+import io.jsonwebtoken.io.IOException;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -220,30 +222,49 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Map<String, Object> logOutService(HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if(authentication != null){
-            String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-            jwtService.invalidateToken(token);
-            logoutHandler.logout(request, response, authentication);
+        if (authentication == null) {
+            return Collections.singletonMap("message", "error");
         }
 
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", null)
+        // Extract the token from the Authorization header
+        String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return Collections.singletonMap("message", "Invalid token");
+        }
+
+        String token = authorizationHeader.substring(7);
+        jwtService.invalidateToken(token);
+
+
+        try {
+            logoutHandler.logout(request, response, authentication);
+        } catch (IOException e) {
+            return Collections.singletonMap("message", "Logout error");
+        }
+
+        // Invalidate the refresh token
+        String refreshToken = CookiesUtils.getCookieValue("refreshToken", request);
+        if (refreshToken != null) {
+            jwtService.invalidateToken(refreshToken);
+        }
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .secure(true)
                 .path("/api")
                 .maxAge(0)
                 .build();
-
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
-        String refreshToken = CookiesUtils.getCookieValue("refreshToken", request);
-        jwtService.invalidateToken(refreshToken);
-
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
-
+        // Log the logout time for the token
+        trailRepository.findByToken(token).ifPresent(userToken -> {
+            userToken.setLogoutTime(LocalDateTime.now());
+            trailRepository.save(userToken);
+        });
 
         return Collections.singletonMap("message", "Logout successful");
     }
+
 
     public BaseResponse refreshTokenCookie(String refreshToken) {
         try{
