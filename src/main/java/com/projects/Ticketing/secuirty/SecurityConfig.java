@@ -12,6 +12,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -38,8 +40,28 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthenticationEntryPoint))
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthService, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthService, UsernamePasswordAuthenticationFilter.class)
+                .logout(logout -> logout
+                        .logoutUrl("api/v1/auth")
+                        .logoutSuccessHandler(((request, response, authentication) -> {
+                            response.setStatus(200);
+                            response.getWriter().write("{\"message\": \"logout successful\"}");
+                        }))
+                        .invalidateHttpSession(true)
+                        .deleteCookies("refreshToken")
+                        .clearAuthentication(true)
+                        .permitAll());
 
         return httpSecurity.build();
+    }
+
+    @Bean
+    public LogoutHandler logoutHandler() {
+        return new SecurityContextLogoutHandler();
+    }
+
+    @Bean
+    public SecurityContextLogoutHandler securityContextLogoutHandler() {
+        return new SecurityContextLogoutHandler();
     }
 }

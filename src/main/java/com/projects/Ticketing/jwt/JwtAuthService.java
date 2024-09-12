@@ -34,11 +34,21 @@ public class JwtAuthService extends OncePerRequestFilter {
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
+
+            if (jwtService.isTokenBlacklisted(token)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid or blacklisted token.");
+                return;
+            }
+
             try {
                 username = jwtService.extractUsername(token);
             } catch (Exception e) {
-                // Handle the exception, e.g., logging
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid token.");
+                return;
             }
+
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

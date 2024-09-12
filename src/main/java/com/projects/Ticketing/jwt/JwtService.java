@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @Service
@@ -27,6 +28,9 @@ public class JwtService {
 
     @Value("${REFRESH_TOKEN_EXPIRATION_MS}")
     private long refreshTokenMs;
+
+    private final ConcurrentHashMap<String, Date> blacklist = new ConcurrentHashMap<>();
+
 
     private final UserRepository userRepository;
 
@@ -156,5 +160,22 @@ public class JwtService {
 
         // Generate refresh token with longer expiration time
         return generateToken(claims, userDetails.getUsername(), refreshTokenMs);
+    }
+
+    //blacklisting tokens
+    public boolean isTokenBlacklisted(String token) {
+        return blacklist.containsKey(token);
+    }
+
+    public void invalidateToken(String token){
+        blacklist.put(token, new Date());
+    }
+
+    public boolean validateToken(String token) {
+        if (isTokenBlacklisted(token)) {
+            return false;
+        }
+
+        return !isTokenExpired(token);
     }
 }

@@ -2,15 +2,24 @@ package com.projects.Ticketing.controller;
 
 import com.projects.Ticketing.dtos.RefreshTokenDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
+import com.projects.Ticketing.jwt.JwtService;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.response.TokenResponse;
 import com.projects.Ticketing.service.auth.AuthServiceImpl;
+import com.projects.Ticketing.utils.CookiesUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,11 +30,17 @@ public class AuthController {
 
     private final AuthServiceImpl authService;
 
+    private final JwtService jwtService;
+
+    private final SecurityContextLogoutHandler logoutHandler;
+
     //logger
     Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(AuthServiceImpl authService) {
+    public AuthController(AuthServiceImpl authService, JwtService jwtService, SecurityContextLogoutHandler logoutHandler) {
         this.authService = authService;
+        this.jwtService = jwtService;
+        this.logoutHandler = logoutHandler;
     }
 
     @PostMapping("/login")
@@ -85,6 +100,35 @@ public class AuthController {
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
+    }
+
+    @PostMapping("/logout")
+    ResponseEntity<?> logout(HttpServletResponse response, HttpServletRequest request){
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if(authentication != null){
+            String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+            jwtService.invalidateToken(token);
+            logoutHandler.logout(request, response, authentication);
+        }
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", null)
+                .httpOnly(true)
+                .secure(true)
+                .path("/api")
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+        String refreshToken = CookiesUtils.getCookieValue("refreshToken", request);
+        jwtService.invalidateToken(refreshToken);
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+
+        return ResponseEntity.ok().body(Collections.singletonMap("message", "Logout successful"));
     }
 
 }
