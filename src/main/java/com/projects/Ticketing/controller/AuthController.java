@@ -6,17 +6,12 @@ import com.projects.Ticketing.jwt.JwtService;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.response.TokenResponse;
 import com.projects.Ticketing.service.auth.AuthServiceImpl;
-import com.projects.Ticketing.utils.CookiesUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -47,7 +42,7 @@ public class AuthController {
        TokenResponse response = authService.loginService(userLoginDto);
 
         HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
+
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", response.getRefreshToken())
                 .httpOnly(true)
@@ -67,7 +62,7 @@ public class AuthController {
         responseData.put("refreshToken", response.getRefreshToken());
         responseData.put("status", response.getStatus());
         responseData.put("message", response.getMessage());
-//        jwtService.extractTokenCreation(token);
+
 
        if(response.getStatus() == HttpStatus.OK.value()){
            return new ResponseEntity<>(responseData, headers, HttpStatus.OK);
