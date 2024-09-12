@@ -62,6 +62,19 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
+    //utils creating login trail
+    public LogInOutTrail loginTrail(String token, User user){
+        LogInOutTrail log = new LogInOutTrail();
+        LocalDateTime date = LocalDateTime.now();
+
+        log.setLoginTime(date);
+        log.setUser(user);
+        log.setToken(token);
+
+        return log;
+    }
+
+
     public AuthServiceImpl(JwtService jwtService, AuthenticationManager authenticationManager,
                            UserRepository userRepository, RefreshTokenRepository refreshTokenRepo, TrailRepository trailRepository, SecurityContextLogoutHandler logoutHandler) {
         this.jwtService = jwtService;
@@ -94,7 +107,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponse loginService(UserLoginDto dto) {
         try {
-            LogInOutTrail userTrail = new LogInOutTrail();
+//            LogInOutTrail userTrail = new LogInOutTrail();
 
             if (dto == null) {
                 return new TokenResponse(
@@ -132,12 +145,15 @@ public class AuthServiceImpl implements AuthService {
             RefreshToken refreshToken = createRefreshToken(user.getId());
 
             //login trail
-            LocalDateTime date = LocalDateTime.now();
-            userTrail.setLoginTime(date);
-            userTrail.setUser(user);
-            userTrail.setToken(token);
+//            LocalDateTime date = LocalDateTime.now();
+//            userTrail.setLoginTime(date);
+//            userTrail.setUser(user);
+//            userTrail.setToken(token);
 
-            trailRepository.save(userTrail);
+
+            LogInOutTrail trail = loginTrail(token, user);
+
+            trailRepository.save(trail);
 
             return new TokenResponse(
                     HttpServletResponse.SC_OK,
@@ -198,7 +214,9 @@ public class AuthServiceImpl implements AuthService {
 
             String username = token.getUser().getEmail();
 
+
             String accessToken = jwtService.generateAccessTokenUsername(username);
+
 
             return new BaseResponse(
                     HttpStatus.OK.value(),
@@ -283,8 +301,10 @@ public class AuthServiceImpl implements AuthService {
             }
 
             String username = token.getUser().getEmail();
-
             String accessToken = jwtService.generateAccessTokenUsername(username);
+
+            LogInOutTrail loginTrail = loginTrail(accessToken, token.getUser());
+            trailRepository.save(loginTrail);
 
             return new BaseResponse(
                     HttpStatus.OK.value(),
