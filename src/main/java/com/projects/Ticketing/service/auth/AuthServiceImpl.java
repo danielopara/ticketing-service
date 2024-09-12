@@ -3,9 +3,11 @@ package com.projects.Ticketing.service.auth;
 import com.projects.Ticketing.dtos.RefreshTokenDto;
 import com.projects.Ticketing.dtos.UserLoginDto;
 import com.projects.Ticketing.jwt.JwtService;
+import com.projects.Ticketing.model.LogInOutTrail;
 import com.projects.Ticketing.model.RefreshToken;
 import com.projects.Ticketing.model.User;
 import com.projects.Ticketing.repository.RefreshTokenRepository;
+import com.projects.Ticketing.repository.TrailRepository;
 import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.response.TokenResponse;
@@ -24,6 +26,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
@@ -37,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepo;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-
+    private final TrailRepository trailRepository;
     //logger
     Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class.getName());
 
@@ -49,11 +52,12 @@ public class AuthServiceImpl implements AuthService {
 
 
     public AuthServiceImpl(JwtService jwtService, AuthenticationManager authenticationManager,
-                           UserRepository userRepository, RefreshTokenRepository refreshTokenRepo) {
+                           UserRepository userRepository, RefreshTokenRepository refreshTokenRepo, TrailRepository trailRepository) {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.refreshTokenRepo = refreshTokenRepo;
+        this.trailRepository = trailRepository;
     }
 
     @Override
@@ -78,6 +82,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponse loginService(UserLoginDto dto) {
         try {
+            LogInOutTrail userTrail = new LogInOutTrail();
 
             if (dto == null) {
                 return new TokenResponse(
@@ -114,10 +119,13 @@ public class AuthServiceImpl implements AuthService {
 
             RefreshToken refreshToken = createRefreshToken(user.getId());
 
-//            Map<String, Object> responseData = new HashMap<>();
-//            responseData.put("accessToken", token);
-//            responseData.put("refreshToken", refreshToken.getToken());
-//            jwtService.extractTokenCreation(token);
+            //login trail
+            LocalDateTime date = LocalDateTime.now();
+            userTrail.setLoginTime(date);
+            userTrail.setUser(user);
+            userTrail.setToken(token);
+
+            trailRepository.save(userTrail);
 
             return new TokenResponse(
                     HttpServletResponse.SC_OK,
