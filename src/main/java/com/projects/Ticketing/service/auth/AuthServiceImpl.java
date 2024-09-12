@@ -12,18 +12,25 @@ import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.response.TokenResponse;
 import com.projects.Ticketing.service.user.implementation.UserServiceImplementation;
+import com.projects.Ticketing.utils.CookiesUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -41,6 +48,8 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final TrailRepository trailRepository;
+    private final SecurityContextLogoutHandler logoutHandler;
+
     //logger
     Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class.getName());
 
@@ -52,12 +61,13 @@ public class AuthServiceImpl implements AuthService {
 
 
     public AuthServiceImpl(JwtService jwtService, AuthenticationManager authenticationManager,
-                           UserRepository userRepository, RefreshTokenRepository refreshTokenRepo, TrailRepository trailRepository) {
+                           UserRepository userRepository, RefreshTokenRepository refreshTokenRepo, TrailRepository trailRepository, SecurityContextLogoutHandler logoutHandler) {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.refreshTokenRepo = refreshTokenRepo;
         this.trailRepository = trailRepository;
+        this.logoutHandler = logoutHandler;
     }
 
     @Override
@@ -205,6 +215,34 @@ public class AuthServiceImpl implements AuthService {
                     e.getMessage()
             );
         }
+    }
+
+    @Override
+    public Map<String, Object> logOutService(HttpServletRequest request, HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if(authentication != null){
+            String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+            jwtService.invalidateToken(token);
+            logoutHandler.logout(request, response, authentication);
+        }
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", null)
+                .httpOnly(true)
+                .secure(true)
+                .path("/api")
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+        String refreshToken = CookiesUtils.getCookieValue("refreshToken", request);
+        jwtService.invalidateToken(refreshToken);
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+
+        return Collections.singletonMap("message", "Logout successful");
     }
 
     public BaseResponse refreshTokenCookie(String refreshToken) {

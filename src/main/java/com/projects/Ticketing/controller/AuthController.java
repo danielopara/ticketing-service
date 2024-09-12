@@ -32,15 +32,14 @@ public class AuthController {
 
     private final JwtService jwtService;
 
-    private final SecurityContextLogoutHandler logoutHandler;
+
 
     //logger
     Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(AuthServiceImpl authService, JwtService jwtService, SecurityContextLogoutHandler logoutHandler) {
+    public AuthController(AuthServiceImpl authService, JwtService jwtService) {
         this.authService = authService;
         this.jwtService = jwtService;
-        this.logoutHandler = logoutHandler;
     }
 
     @PostMapping("/login")
@@ -104,31 +103,8 @@ public class AuthController {
 
     @PostMapping("/logout")
     ResponseEntity<?> logout(HttpServletResponse response, HttpServletRequest request){
-        
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if(authentication != null){
-            String token = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-            jwtService.invalidateToken(token);
-            logoutHandler.logout(request, response, authentication);
-        }
-
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", null)
-                .httpOnly(true)
-                .secure(true)
-                .path("/api")
-                .maxAge(0)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
-
-        String refreshToken = CookiesUtils.getCookieValue("refreshToken", request);
-        jwtService.invalidateToken(refreshToken);
-
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
-
-
-        return ResponseEntity.ok().body(Collections.singletonMap("message", "Logout successful"));
+        Map<String, Object> message = authService.logOutService(request, response);
+        return ResponseEntity.ok(message);
     }
 
 }
