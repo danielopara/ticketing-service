@@ -1,6 +1,5 @@
 package com.projects.Ticketing.dtos;
 
-import com.projects.Ticketing.model.Roles;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

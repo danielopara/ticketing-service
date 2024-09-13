@@ -109,10 +109,6 @@ public class JwtService {
         extractClaim(token, Claims::getIssuedAt);
     }
 
-//    public String generateToken(Authentication authentication){
-//        return generateToken(new HashMap<>(), authentication);
-//    }
-
     public String extractUsername(String token){
         return extractClaim(token, Claims::getSubject);
     }

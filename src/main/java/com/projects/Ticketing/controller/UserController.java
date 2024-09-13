@@ -3,7 +3,6 @@ package com.projects.Ticketing.controller;
 import com.projects.Ticketing.dtos.ChangePasswordDto;
 import com.projects.Ticketing.dtos.CreateUserDto;
 import com.projects.Ticketing.dtos.UpdateDto;
-import com.projects.Ticketing.dtos.UserLoginDto;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.service.user.implementation.UserServiceImplementation;
 import jakarta.servlet.http.HttpServletResponse;
