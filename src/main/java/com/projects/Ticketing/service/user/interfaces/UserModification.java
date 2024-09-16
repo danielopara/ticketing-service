@@ -16,4 +16,5 @@ public interface UserModification {
 
     //profile photo
     String addProfilePhoto(Long id, MultipartFile multipartFile) throws IOException;
+    String deleteProfilePhotoById(Long id);
 }

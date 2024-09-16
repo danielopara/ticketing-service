@@ -272,7 +272,22 @@ public class UserServiceImplementation implements UserService {
 
     @Override
     public String deleteProfilePhotoById(Long id) {
-        return "";
+        try{
+            Optional<ProfilePhoto> userProfilePhoto = profilePhotoRepo.findByUser_Id(id);
+
+            if(userProfilePhoto.isEmpty()){
+                return "no profile photo";
+            }
+
+            ProfilePhoto profilePhoto = userProfilePhoto.get();
+            profilePhotoRepo.delete(profilePhoto);
+
+
+            return "Profile photo deleted";
+        } catch(Exception e){
+            logger.error(e.getMessage());
+            return "Error";
+        }
     }
 
 
