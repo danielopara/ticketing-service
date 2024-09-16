@@ -249,6 +249,11 @@ public class UserServiceImplementation implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(()-> new RuntimeException("User not found"));
 
+        if (profilePhotoRepo.findByUser_Id(id).isPresent()) {
+            return "Profile photo exists";
+        }
+
+
         byte[] fileBytes = multipartFile.getBytes();
         byte[] compressedImage = CompressUtils.compressImage(fileBytes);
 
@@ -265,6 +270,10 @@ public class UserServiceImplementation implements UserService {
         return "image added: " + profilePhoto.getFileName();
     }
 
+    @Override
+    public String deleteProfilePhotoById(Long id) {
+        return "";
+    }
 
 
     @Override
