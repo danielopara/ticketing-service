@@ -24,7 +24,7 @@ public class LogInOutTrail {
     private String token;
 
     @ManyToOne
-    @JoinColumn(name = "email", referencedColumnName = "email", nullable = false)
+    @JoinColumn(name = "email", referencedColumnName = "id", nullable = false)
     private User user;
 
     private LocalDateTime loginTime;
