@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("api/v1/user")
@@ -119,6 +122,19 @@ public class UserController {
             return new ResponseEntity<>(response, headers, HttpStatus.OK);
         }else{
             return new ResponseEntity<>(response, headers, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping(value = "/upload-profilePhoto/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadProfilePhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file){
+        try {
+            String message = userService.addProfilePhoto(id, file);
+            return ResponseEntity.status(HttpStatus.OK).body(message);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file.");
         }
     }
 }

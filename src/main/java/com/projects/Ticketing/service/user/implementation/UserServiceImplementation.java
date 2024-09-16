@@ -4,10 +4,13 @@ import com.projects.Ticketing.dtos.ChangePasswordDto;
 import com.projects.Ticketing.dtos.CreateUserDto;
 import com.projects.Ticketing.dtos.UpdateDto;
 import com.projects.Ticketing.jwt.JwtService;
+import com.projects.Ticketing.model.ProfilePhoto;
 import com.projects.Ticketing.model.User;
+import com.projects.Ticketing.repository.ProfilePhotoRepository;
 import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.service.user.interfaces.UserService;
+import com.projects.Ticketing.utils.CompressUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -17,7 +20,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -28,17 +33,19 @@ public class UserServiceImplementation implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final ProfilePhotoRepository profilePhotoRepo;
 
     @Value("${VALIDATION_EMAIL.regexp}")
     private String emailRegex;
 
     Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class.getName());
 
-    public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService) {
+    public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService, ProfilePhotoRepository profilePhotoRepo) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.profilePhotoRepo = profilePhotoRepo;
     }
 
     @Override
@@ -230,6 +237,34 @@ public class UserServiceImplementation implements UserService {
                     null
             );
         }
+    }
+
+    @Override
+    public String addProfilePhoto(Long id, MultipartFile multipartFile) throws IOException {
+        if (multipartFile == null || multipartFile.isEmpty()) {
+            return "No photo uploaded";
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(()-> new RuntimeException("User not found"));
+
+        byte[] fileBytes = multipartFile.getBytes();
+        byte[] compressedImage = CompressUtils.compressImage(fileBytes);
+
+
+        ProfilePhoto profilePhoto = new ProfilePhoto();
+        profilePhoto.setImageData(compressedImage);
+        profilePhoto.setFileName(user.getEmail() + "_profilePhoto");
+        profilePhoto.setUser(user);
+
+        profilePhotoRepo.save(profilePhoto);
+
+        return "image added: " + profilePhoto.getFileName();
+    }
+
+    @Override
+    public byte[] getProfilePhotoByUserId(Long id) {
+        return new byte[0];
     }
 
 
