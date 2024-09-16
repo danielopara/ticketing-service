@@ -11,6 +11,7 @@ import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.service.user.interfaces.UserService;
 import com.projects.Ticketing.utils.CompressUtils;
+import com.projects.Ticketing.utils.ExtensionRetrieval;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -251,10 +252,12 @@ public class UserServiceImplementation implements UserService {
         byte[] fileBytes = multipartFile.getBytes();
         byte[] compressedImage = CompressUtils.compressImage(fileBytes);
 
+        //get file extension
+        String fileExtension = ExtensionRetrieval.getFileExtension(multipartFile);
 
         ProfilePhoto profilePhoto = new ProfilePhoto();
         profilePhoto.setImageData(compressedImage);
-        profilePhoto.setFileName(user.getEmail() + "_profilePhoto");
+        profilePhoto.setFileName(user.getEmail() + "_profilePhoto." + fileExtension);
         profilePhoto.setUser(user);
 
         profilePhotoRepo.save(profilePhoto);
@@ -262,10 +265,6 @@ public class UserServiceImplementation implements UserService {
         return "image added: " + profilePhoto.getFileName();
     }
 
-    @Override
-    public byte[] getProfilePhotoByUserId(Long id) {
-        return new byte[0];
-    }
 
 
     @Override
@@ -386,5 +385,17 @@ public class UserServiceImplementation implements UserService {
                     null
             );
         }
+    }
+
+    @Override
+    public byte[] getProfilePhotoById(Long id) {
+        Optional<ProfilePhoto> userId = profilePhotoRepo.findByUser_Id(id);
+
+        if(userId.isEmpty()){
+            return null;
+        }
+
+        ProfilePhoto profilePhoto = userId.get();
+        return CompressUtils.decompressImage(profilePhoto.getImageData());
     }
 }

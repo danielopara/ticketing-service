@@ -137,4 +137,20 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file.");
         }
     }
+
+    @GetMapping(value = "get-profilePhoto/{id}")
+    public ResponseEntity<?> getProfilePhoto(@PathVariable Long id){
+        try{
+            byte[] profilePhoto = userService.getProfilePhotoById(id);
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .contentType(MediaType.valueOf("image/png"))
+                    .body(profilePhoto);
+        }catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file.");
+        }
+    }
 }
