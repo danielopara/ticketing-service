@@ -153,4 +153,17 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file.");
         }
     }
+
+    @DeleteMapping(value = "delete-profilePhoto/{id}")
+    public ResponseEntity<?> deleteProfilePhoto(@PathVariable Long id){
+        try{
+            String response = userService.deleteProfilePhotoById(id);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file.");
+        }
+    }
 }
