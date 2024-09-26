@@ -5,8 +5,10 @@ import com.projects.Ticketing.dtos.CreateUserDto;
 import com.projects.Ticketing.dtos.UpdateDto;
 import com.projects.Ticketing.jwt.JwtService;
 import com.projects.Ticketing.model.ProfilePhoto;
+import com.projects.Ticketing.model.Role;
 import com.projects.Ticketing.model.User;
 import com.projects.Ticketing.repository.ProfilePhotoRepository;
+import com.projects.Ticketing.repository.RoleRepository;
 import com.projects.Ticketing.repository.UserRepository;
 import com.projects.Ticketing.response.BaseResponse;
 import com.projects.Ticketing.service.user.interfaces.UserService;
@@ -27,6 +29,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
+//TODO: User Role and Permissions
+
 @Service
 @Slf4j
 public class UserServiceImplementation implements UserService {
@@ -35,18 +39,20 @@ public class UserServiceImplementation implements UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final ProfilePhotoRepository profilePhotoRepo;
+    private final RoleRepository roleRepo;
 
     @Value("${VALIDATION_EMAIL.regexp}")
     private String emailRegex;
 
     Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class.getName());
 
-    public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService, ProfilePhotoRepository profilePhotoRepo) {
+    public UserServiceImplementation(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtService jwtService, ProfilePhotoRepository profilePhotoRepo, RoleRepository roleRepo) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.profilePhotoRepo = profilePhotoRepo;
+        this.roleRepo = roleRepo;
     }
 
     @Override
@@ -54,6 +60,17 @@ public class UserServiceImplementation implements UserService {
         BaseResponse response = new BaseResponse();
         User user = new User();
         try {
+
+            Optional<Role> userRole = roleRepo.findByRoleName(dto.getRole());
+            if(userRole.isEmpty()){
+                return new BaseResponse(
+                        HttpServletResponse.SC_BAD_REQUEST,
+                        "role does not exist",
+                        dto.getRole(),
+                        null
+                );
+            }
+
             // Log incoming role value
             logger.info("Incoming role value: {}", dto.getRole());
 
@@ -90,16 +107,20 @@ public class UserServiceImplementation implements UserService {
             }
 
             // Role validation
-            if (!dto.getRole().equals("ADMIN") && !dto.getRole().equals("USER")) {
-                return new BaseResponse(
-                        HttpServletResponse.SC_BAD_REQUEST,
-                        "roles can either be ADMIN or USER",
-                        null,
-                        null
-                );
-            }
+//            if (!dto.getRole().equals("ADMIN") && !dto.getRole().equals("USER")) {
+//                return new BaseResponse(
+//                        HttpServletResponse.SC_BAD_REQUEST,
+//                        "roles can either be ADMIN or USER",
+//                        null,
+//                        null
+//                );
+//            }
+
+//            Set<Role> roles = new HashSet<>(userRole);
+//            roles.add(userRole.get());
 
             // Save user details
+
             user.setFirstName(dto.getFirstName());
             user.setLastName(dto.getLastName());
             user.setEmail(dto.getEmail());

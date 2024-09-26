@@ -1,5 +1,6 @@
 package com.projects.Ticketing.secuirty;
 
+import com.projects.Ticketing.config.CustomAccessDeniedHandler;
 import com.projects.Ticketing.config.CustomAuthenticationEntryPoint;
 import com.projects.Ticketing.jwt.JwtAuthService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class SecurityConfig {
     private final JwtAuthService jwtAuthService;
     private final AuthenticationProvider authenticationProvider;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
 
     private static final String[] AUTH_WHITELIST = {
             "/v3/api-docs/**", "/configuration/**", "/swagger-ui/**",
@@ -34,12 +36,12 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers(AUTH_WHITELIST).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/admin").hasAnyRole("ADMIN")
-//                        .requestMatchers("api/v1/user/allUsers").permitAll()
+                        .requestMatchers(AUTH_WHITELIST).permitAll()
+                        .requestMatchers("/api/v1/admin/role/addRole").hasAnyRole("ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthenticationEntryPoint))
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthService, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout
